@@ -16,6 +16,10 @@ conda activate rhyGes_simple
 conda install pytorch==1.12.0 torchvision==0.13.0 torchaudio==0.12.0 cudatoolkit=11.3 -c pytorch
 ```
 
+``` shell
+pip install ffmpeg joblib librosa matplotlib numpy pandas pip scikit-learn scipy tensorboardx tqdm json5 docopt moviepy tensorboard transforms3d opencv-python pyloudnorm omegaconf 
+```
+
 ### Sample
 
 Download the pretrained source from [Google Drive](https://drive.google.com/file/d/1oIbZygcHivxWcRkIki3zis6LhCklpm8L/view?usp=sharing) and put the .zip file into the root directory of this project. Then, run the script to automatically process the pretrained source:

@@ -97,6 +97,7 @@ class Preprocessor:
         print("\nDetecting audio onset......")
         
         dir_onset = os.path.join(dir_features, "Onset")
+        print("dir_onset", dir_onset)
         if os.path.exists(dir_onset):
             print("Found audio onset, skip.")
         else:
@@ -165,17 +166,16 @@ class Preprocessor:
         # region Uniform data fragment length.
         
         print("\nUniforming data fragment length......")
-        
         dir_data_len_uniform = os.path.join(dir_features, "Data_Len_Uniform")
         if os.path.exists(dir_data_len_uniform):
             print("Found data len uniform align result, skip.")
         else:
             os.makedirs(dir_data_len_uniform)
             _, _, _ = uniform_data_fragment_length_tsm(dir_mel_motion_aligned=dir_mel_motion_aligned,
-                                                       dir_onset=dir_onset, dir_wav=dir_wav, names_file=name_files,
-                                                       dir_save=dir_data_len_uniform, sr=sr, fps=fps,
-                                                       rotation_order=self.config["bvh_rotation_order"],
-                                                       uniform_len=self.config["uniform_len"], save=True)
+                                                        dir_onset=dir_onset, dir_wav=dir_wav, names_file=name_files,
+                                                        dir_save=dir_data_len_uniform, sr=sr, fps=fps,
+                                                        rotation_order=self.config["bvh_rotation_order"],
+                                                        uniform_len=self.config["uniform_len"], save=True)
         
         # endregion
         

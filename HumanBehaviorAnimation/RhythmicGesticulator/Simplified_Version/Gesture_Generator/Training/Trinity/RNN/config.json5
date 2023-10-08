@@ -1,5 +1,5 @@
 {
-    dir_data: "../Data/Trinity/Processed/Training_Data",
+    dir_data: "./Data/Trinity/Processed/Training_Data",
     dir_log: "./Training/Trinity",
     device: "cuda:0",
     batch_size: 400,

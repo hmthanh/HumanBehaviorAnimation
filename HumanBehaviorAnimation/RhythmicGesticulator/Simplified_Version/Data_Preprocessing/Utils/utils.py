@@ -134,7 +134,7 @@ def resample_audio_feature(audio_feat : np.ndarray, ticks : np.ndarray, target_t
 
 def resample_wav_data(wav_data: np.ndarray, target_len: int) -> np.ndarray:
     ratio = wav_data.shape[0] / target_len
-    wav_data_resampled = librosa.effects.time_stretch(wav_data, ratio)
+    wav_data_resampled = librosa.effects.time_stretch(y=wav_data, rate=ratio)
 
     if wav_data_resampled.shape[0] > target_len:
         wav_data_resampled = wav_data_resampled[: target_len]

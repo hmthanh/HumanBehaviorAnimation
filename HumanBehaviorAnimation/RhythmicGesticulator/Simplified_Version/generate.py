@@ -44,7 +44,7 @@ class Inference:
         with open(lxm_intp_cfg_path, 'r') as f:
             self.lxm_intp_cfg = OmegaConf.create(json5.load(f))
 
-        split_path = self.gen_cfg.dir_data.split(os.path.sep)
+        split_path = self.gen_cfg.dir_data.split('/')  # os.path.sep = '\'
         self.dataset_dir = os.path.join('.', *split_path[split_path.index('Data'):])
         with open(os.path.join(self.dataset_dir, 'config.json5'), 'r') as f:
             self.data_cfg = OmegaConf.create(json5.load(f))
@@ -68,7 +68,7 @@ class Inference:
         os.makedirs(os.path.join(dir_data, 'Audio'), exist_ok=True)
         shutil.move(os.path.join(dir_data, f'{name_file}.wav'), os.path.join(dir_data, 'Audio'))
         os.makedirs(os.path.join(dir_data, 'Motion'), exist_ok=True)
-        align_motion_template_len_to_audio(aud_path=os.path.join(dir_data, 'Audio', f'{name_file}.wav'), 
+        align_motion_template_len_to_audio(aud_path=os.path.join(dir_data, 'Audio', f'{name_file}.wav'),
                                            mo_path=os.path.join(self.dataset_dir, 'motion_template.bvh'),
                                            rotation_order=self.rotation_order,
                                            save_path=os.path.join(dir_data, 'Motion', f'{name_file}.bvh'))
@@ -95,7 +95,13 @@ class Inference:
 
         with open(os.path.join(self.dataset_dir, "lexicon.pkl"), "rb") as f:
             lexicon = pickle.load(f)
-        init_lxm_idx = stats.mode(lexicon.labels_).mode[0]  # default to the most frequent lexeme
+        mode_result = stats.mode(lexicon.labels_)
+        if np.isscalar(mode_result.mode):
+            init_lxm_idx = mode_result.mode
+        else:
+            init_lxm_idx = mode_result.mode[0]
+        # init_lxm_idx = mode_result.mode[0]
+        # init_lxm_idx = stats.mode(lexicon.labels_).mode[0]  # default to the most frequent lexeme
 
         processed_data = np.load(os.path.join(dir_save, f"{dataset_type}.npz"))
         aud = processed_data['audio'].astype(np.float32)  # [N(1), L, D]
@@ -108,7 +114,7 @@ class Inference:
         self.data_frame_template_euler = pd.read_csv(
             os.path.join(dir_save, "Features", "BVH_Motion", name_file + ".csv"),
             index_col=0)
-        
+
         data_pipe = jl.load(os.path.join(self.dataset_dir, 'data_pipe.sav'))
         new_step = ('np', Numpyfier())
         data_pipe.steps.append(new_step)
@@ -131,7 +137,7 @@ class Inference:
             lxm_idx_pred = self.lxm_intp.generate(aud[:, BL:, :], init_lxm_idx)[0].long()
             lxm_idx_pred = torch.cat([init_lxm_idx, lxm_idx_pred], dim=-1)
             lxm_pred = lxc[lxm_idx_pred, :]
-            
+
             # print(lxm_idx_pred)
 
         # generate motion
@@ -139,8 +145,8 @@ class Inference:
             init_mo = torch.from_numpy(mo).to(self.device)[:, :BL, :]
 
             mo_hat = self.gen(aud.permute((0, 2, 1)).contiguous(),
-                            init_mo.permute((0, 2, 1)).contiguous(),
-                            lxm_pred.permute((0, 2, 1)).contiguous()).permute((0, 2, 1)).contiguous().cpu().numpy()
+                              init_mo.permute((0, 2, 1)).contiguous(),
+                              lxm_pred.permute((0, 2, 1)).contiguous()).permute((0, 2, 1)).contiguous().cpu().numpy()
             mo_hat = np.concatenate([mo[:, :BL, :], mo_hat, mo[:, -BL:, :]], axis=1)
             assert mo_hat.shape[1] == total_B * BL
 
@@ -227,20 +233,20 @@ class Inference:
 if __name__ == "__main__":
     args = get_args_parser()
     args = args.parse_args()
-    
+
     # region Data Preparation.
-    
-    if not os.path.exists(os.path.join(args.data_dir, args.name_file+'.wav')):
-        raise ValueError(f"Audio file {args.name_file+'.wav'} does not exist in {args.data_dir}.")
-    
+
+    if not os.path.exists(os.path.join(args.data_dir, args.name_file + '.wav')):
+        raise ValueError(f"Audio file {args.name_file + '.wav'} does not exist in {args.data_dir}.")
+
     for f_name in os.listdir(args.data_dir):
         if '.wav' in f_name:
             if f_name[:-4] != args.name_file:
                 warnings.warn('There are other audio files in the data directory. Will remove it.')
                 os.remove(os.path.join(args.data_dir, f_name))
-    
+
     os.makedirs(args.save_dir, exist_ok=True)
-    
+
     # endregion
 
     inf = Inference(args.gen_checkpoint_path, args.gen_checkpoint_config,
@@ -248,21 +254,21 @@ if __name__ == "__main__":
                     args.device)
 
     inf.sample(args.data_dir, args.name_file, args.save_dir)
-    
+
     # region Result Preparation.
-    
-    os.rename(os.path.join(args.data_dir, 'Audio', args.name_file+'.wav'), os.path.join(args.data_dir, args.name_file+'.wav'))
-    
+
+    os.rename(os.path.join(args.data_dir, 'Audio', args.name_file + '.wav'), os.path.join(args.data_dir, args.name_file + '.wav'))
+
     shutil.rmtree(os.path.join(args.data_dir, 'Audio'))
     shutil.rmtree(os.path.join(args.data_dir, 'Motion'))
-    shutil.rmtree(os.path.join(args.data_dir, 'Features'))
-    os.remove(os.path.join(args.data_dir, 'config.json5'))
-    os.remove(os.path.join(args.data_dir, 'data_pipe.sav'))
-    os.remove(os.path.join(args.data_dir, 'motion_template.bvh'))
-    os.remove(os.path.join(args.data_dir, 'valid_info.txt'))
-    os.remove(os.path.join(args.data_dir, 'valid.npz'))
-    
+    shutil.rmtree(os.path.join(args.save_dir, 'Features'))
+    os.remove(os.path.join(args.save_dir, 'config.json5'))
+    os.remove(os.path.join(args.save_dir, 'data_pipe.sav'))
+    os.remove(os.path.join(args.save_dir, 'motion_template.bvh'))
+    os.remove(os.path.join(args.save_dir, 'valid_info.txt'))
+    os.remove(os.path.join(args.save_dir, 'valid.npz'))
+
     print('\n\n------------------------------------------------------------------')
-    print(f'The generated motion is saved in {os.path.join(args.save_dir, args.name_file+"_pred.bvh")}.')
-    
+    print(f'The generated motion is saved in {os.path.join(args.save_dir, args.name_file + "_pred.bvh")}.')
+
     # endregion
